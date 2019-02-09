@@ -8,18 +8,39 @@ class RequestHandler(BaseHTTPRequestHandler):
     length = int(self.headers.get('Content-Length'))
     body = self.rfile.read(length).decode('ascii')
     data = json.loads(body)
-    print(self.path, data)
+    response = self.server.stub.call(self.path, data)
     self.send_response(200)
-    self.send_header('Content-Type', 'text/html')
+    self.send_header('Content-Type', 'application/json')
     self.end_headers()
-    message = 'Hello Client!'
+    message = json.dumps(response)
     self.wfile.write(bytes(message, 'utf8'))
     return
 
-def server_start():
-  address = ('', 1992)
-  httpd = HTTPServer(address, RequestHandler)
-  httpd.serve_forever()
+
+class ServiceStub:
+  functions = {}
+
+  def add(self, name, details):
+    self.functions[name] = details
+  
+  def remove(self, name):
+    self.functions[name] = None
+
+  def call(self, name, data):
+    details = self.functions[name]
+    return details(**data)
+
+  def start(self, port=1992):
+    address = ('', port)
+    httpd = HTTPServer(address, RequestHandler)
+    httpd.stub = self
+    httpd.serve_forever()
 
 
-server_start()
+def test(begin, end):
+  return begin+end
+
+
+a = ServiceStub()
+a.add('/json', test)
+a.start()
