@@ -26,13 +26,18 @@ def validate_args(data, typ, req):
       raise ValueError(k+' is required')
   return
 
+def get_path(srvc, func):
+  if srvc is None or len(srvc) == 0:
+    return '/'+func
+  return '/'+srvc+'/'+func
+
 
 class ClientStub:
   def __init__(self, sign, srvc=None, host='127.0.0.1', port=1992):
     parts = re.sub(r'[^\w\[\]]+', ' ', sign).split()
     (self.args_typ, self.args_req) = parse_args(parts)
     [self.retn_typ, func] = parts[0:1]
-    self.path = ('' if srvc is None else '/'+srvc)+'/'+func
+    self.path = get_path(srvc, func)
     self.host = host
     self.port = port
 
