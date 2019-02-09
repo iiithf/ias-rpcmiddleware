@@ -1,0 +1,39 @@
+IIIT-H Course/ Winter  
+
+Internals of App Servers
+
+
+Lab 3 "Hello Middleware"- A Simple Middleware System
+(Assessed) 
+
+Objective
+To build an appreciation of the mechanics of basic remote procedures in middleware systems. Based on a OOPs enabled wire protocol to be defined. 
+
+Requirement
+
+Build a Simple Middleware System. That allows dynamically adding a service into the system and allows accessing the service from a client program. System will include simple utilities to build the server skel and client stub is to be built. To be written in Java; Server side using servlet API to be deployed in Tomcat. On client side, only use the basic socket API and no other libraries used. All processing should be done using basic language constructs. Define a OOPs enabled wire protocol, based on which the system is to be implemented. Should support defining object structure definitions. 
+
+Deliverables:
+A.	Submit the protocol defined. That will include the schema structure to define object definitions, and then the wire protocol for the RPC request and response that uses these schemas.
+B.	The codegen utilities to generate the client stib and server skels-servlets
+C.	Instructions to run the above. Codegen and then configuration needed to get the RPC working. (Show it on a flipkart-order like RPOC example)
+
+
+Key steps
+
+-	Model the protocol, clientGen, serverGen
+-	For setting up a basic set of methods, one per file
+-	Service and method to be allowed in RPC.
+-	Have one codegen utility that generates both clientGen & serverGen
+-	Need to be able to extract the input param numbers and types. And return types. (support basic types alone- no pointers and structures needed).
+-	Codegen will generate needed client and sever files
+
+There should be one utility that includes both the clientGen and serverGen functionality. The utility should have a -help, which will list the protocol used, the commands to use the codegen, and command to to eventually run the app.
+
+Can only use simple socket programming in the code. Cannot use any other existing RPC libraries.
+
+
+Test to be run
+Show it working oin flipkart order like usecase. To be tested with client and server on different machines. 
+
+
