@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 from http.client import HTTPConnection
 import json
 import re
@@ -27,19 +28,18 @@ def validate_args(data, typ, req):
 
 
 class ClientStub:
-  def __init__(self, sign, srvc='default', host='127.0.0.1', port=1992):
+  def __init__(self, sign, srvc=None, host='127.0.0.1', port=1992):
     parts = re.sub(r'[^\w\[\]]+', ' ', sign).split()
     (self.args_typ, self.args_req) = parse_args(parts)
-    [self.retn_typ, self.func] = parts[0:1]
-    self.srvc = srvc
+    [self.retn_typ, func] = parts[0:1]
+    self.path = ('' if srvc is None else '/'+srvc)+'/'+func
     self.host = host
     self.port = port
 
   def call(self, data):
     validate_args(data, self.args_typ, self.args_req)
     conn = HTTPConnection(self.host, self.port)
-    url = '/'+self.srvc+'/'+self.func
-    conn.request('POST', url, body=json.dumps(data))
+    conn.request('POST', self.path, body=json.dumps(data))
     res = conn.getresponse()
     data = json.loads(res.read())
     validate_typ('return', data, self.retn_typ)
