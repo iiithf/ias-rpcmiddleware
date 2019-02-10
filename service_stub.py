@@ -1,46 +1,127 @@
 #!/usr/bin/env python
 from http.server import HTTPServer, BaseHTTPRequestHandler
+from http.client import HTTPConnection
 import json
+import re
+
+
+def parse_addr(addr):
+  i = addr.find(':')
+  host = '' if i<0 else addr[0:i]
+  port = int(addr if i<0 else addr[i+1:])
+  return (host, port)
+  
+def parse_args(parts):
+  (typ, req) = ({}, set())
+  for i in range(2, len(parts), 2):
+    arg = re.sub(r'\W', '', parts[i+1])
+    typ[arg] = parts[i]
+    if arg == parts[i+1]:
+      req.add(arg)
+  return (typ, req)
+
+def validate_typ(nam, val, typ):
+  if str(type(val)).find(typ) < 0:
+    raise TypeError('%s=%s (%s), but expected %s!' % (nam, str(val), type(val), typ))
+
+def validate_args(args, typ, req):
+  for k, v in args.items():
+    validate_typ(k, v, typ.get(k))
+  for k in req:
+    if k not in args:
+      raise ValueError('%s is required!' % k)
+  return
 
 
 class RequestHandler(BaseHTTPRequestHandler):
-  def do_POST(self):
-    length = int(self.headers.get('Content-Length'))
-    body = self.rfile.read(length).decode('ascii')
-    data = json.loads(body)
-    response = self.server.stub.call(self.path, data)
-    self.send_response(200)
-    self.send_header('Content-Type', 'application/json')
+  def body(self):
+    size = int(self.headers.get('Content-Length'))
+    return self.rfile.read(size)
+
+  def send(self, code, body=None, headers=None):
+    self.send_response(code)
+    for k, v in headers.items():
+      self.send_header(k, v)
     self.end_headers()
-    message = json.dumps(response)
-    self.wfile.write(bytes(message, 'utf8'))
-    return
+    if body is not None:
+      self.wfile.write(body)
+  
+  def send_json(self, code, body):
+    heads = {'Content-Type': 'application/json'}
+    self.send(code, bytes(json.dumps(body), 'utf8'), heads)
+
+  def do_GET(self):
+    stub = self.server.stub
+    self.send_json(200, stub.procs)
+
+  def do_POST(self):
+    stub = self.server.stub
+    stub.handle_call(self)
+
+
+class ServiceProcedure:
+  def __init__(self, sign, func):
+    self.sign = re.sub(r'\s+', ' ', sign).strip()
+    parts = re.sub(r'[^\w\[\]]+', ' ', self.sign).strip().split(' ')
+    (self.retn_typ, self.name) = parts[0:2]
+    (self.args_typ, self.args_req) = parse_args(parts)
+    self.func = func
+
+  def call(self, args):
+    validate_args(args, self.args_typ, self.args_req)
+    retn = self.func(**args)
+    validate_typ('return', retn, self.retn_typ)
+    return retn
 
 
 class ServiceStub:
-  functions = {}
+  def __init__(self, name=''):
+    self.name = name
+    self.procs = {}
 
-  def add(self, name, details):
-    self.functions[name] = details
+  def add(self, sign, func):
+    proc = ServiceProcedure(sign, func)
+    if self.procs.get(proc.name) is not None:
+      return 'Procedure %s already added!' % proc.name
+    self.procs[proc.name] = proc
+    return None
   
   def remove(self, name):
-    self.functions[name] = None
+    self.procs[name] = None
+    return None
 
-  def call(self, name, data):
-    details = self.functions[name]
-    return details(**data)
+  def handle_call(self, http):
+    name = http.path[1:]
+    proc = self.procs.get(name)
+    if proc is None:
+      msg = 'Unknown procedure %s!' % name
+      return http.send_json(400, {'error': msg})
+    try:
+      args = json.loads(http.body())
+      retn = proc.call(args)
+      http.send_json(200, {'return': retn})
+    except Exception as e:
+      http.send_json(400, {'error': repr(e)})
 
-  def start(self, port=1992):
-    address = ('', port)
-    httpd = HTTPServer(address, RequestHandler)
+  def start_add(self, srvc, midw):
+    (host, port) = midw
+    conn = HTTPConnection(host, port, source_address=srvc)
+    conn.request('POST', '/service/add/'+self.name)
+    resp = conn.getresponse()
+    if resp.code != 200:
+      data = json.loads(resp.read())
+      raise NameError(data.get('error'))
+
+  def start(self, srvc=('', 1995), midw=None):
+    if midw is not None:
+      self.start_add(srvc, midw)
+    httpd = HTTPServer(srvc, RequestHandler)
     httpd.stub = self
     httpd.serve_forever()
-
 
 def test(begin, end):
   return begin+end
 
-
 a = ServiceStub()
-a.add('/json', test)
-a.start()
+a.add('int json(int begin, int end)', test)
+a.start(('', 1992))

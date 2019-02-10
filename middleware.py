@@ -62,7 +62,7 @@ class ServiceHandler:
   def handle_forward(self, http):
     name = re.sub(r'\/.*', '', http.path[1:])
     path = http.path[len(name)+1:]
-    if self.addrs[name] is None:
+    if self.addrs.get(name) is None:
       return http.send_json(400, 'Unknown request %s!' % http.path)
     (host, port) = self.addrs[name]
     conn = HTTPConnection(host, port)

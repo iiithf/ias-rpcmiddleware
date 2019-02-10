@@ -34,7 +34,7 @@ def get_path(srvc, func):
 
 class ClientStub:
   def __init__(self, sign, srvc=None, host='127.0.0.1', port=1992):
-    parts = re.sub(r'[^\w\[\]\=\'\"\-\.]+', ' ', sign.strip()).split()
+    parts = re.sub(r'[^\w\[\]]+', ' ', sign.strip()).split()
     (self.args_typ, self.args_req) = parse_args(parts)
     [self.retn_typ, func] = parts[0:2]
     self.path = get_path(srvc, func)
