@@ -63,9 +63,9 @@ class ServiceHandler:
     if path.startswith('/add/'):
       msg = self.add(path[5:], addr)
     elif path.startswith('/remove/'):
-      mesg = self.remove(path[8:], addr)
-      code = 200 if mesg is None else 400
-    return http.send_json(code, {'error': mesg})
+      msg = self.remove(path[8:], addr)
+    code = 200 if msg is None else 400
+    return http.send_json(code, {'error': msg})
   
   def handle_forward(self, http):
     name = re.sub(r'\/.*', '', http.path[1:])

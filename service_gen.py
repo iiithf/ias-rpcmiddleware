@@ -36,7 +36,10 @@ def write_setup(f, procs):
   f.write('  return serv\n')
 
 def write_start(f, name, addr, midw):
+  f.write('addr = %s\n' % str(addr))
+  f.write('midw = %s\n' % str(midw))
   f.write('service = service_setup(\'%s\')\n' % name)
+  f.write(r"print('Starting service on %s -> %s' % (addr, midw))"+'\n')
   f.write('service.start(%s, %s)\n' % (str(addr), str(midw)))
 
 
