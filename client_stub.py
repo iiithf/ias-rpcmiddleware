@@ -14,38 +14,48 @@ def parse_args(parts):
   return (typ, req)
 
 def validate_typ(nam, val, typ):
-  if typ != type(val):
-    raise TypeError(nam+'='+val+' ('+type(val)+'), but expected '+typ)
-  return
+  if str(type(val)).find(typ) < 0:
+    raise TypeError('%s=%s (%s), but expected %s!' % (nam, str(val), type(val), typ))
 
-def validate_args(data, typ, req):
-  for k, v in data.items():
-    validate_typ(k, v, typ[k])
+def validate_args(args, typ, req):
+  for k, v in args.items():
+    validate_typ(k, v, typ.get(k))
   for k in req:
-    if data[k] is None:
-      raise ValueError(k+' is required')
-  return
-
-def get_path(srvc, func):
-  if srvc is None or len(srvc) == 0:
-    return '/'+func
-  return '/'+srvc+'/'+func
+    if k not in args:
+      raise ValueError('%s is required!' % k)
 
 
 class ClientStub:
-  def __init__(self, sign, srvc=None, host='127.0.0.1', port=1992):
-    parts = re.sub(r'[^\w\[\]]+', ' ', sign.strip()).split()
+  def __init__(self, sign, addr=('127.0.0.1', 1992), srvc=''):
+    self.sign = re.sub(r'\s+', ' ', sign).strip()
+    parts = re.sub(r'[^\w\[\]]+', ' ', self.sign).strip().split(' ')
+    (self.retn_typ, self.name) = parts[0:2]
     (self.args_typ, self.args_req) = parse_args(parts)
-    [self.retn_typ, func] = parts[0:2]
-    self.path = get_path(srvc, func)
-    self.host = host
-    self.port = port
+    (self.addr, self.srvc) = (addr, srvc)
 
-  def call(self, data):
-    validate_args(data, self.args_typ, self.args_req)
-    conn = HTTPConnection(self.host, self.port)
-    conn.request('POST', self.path, body=json.dumps(data))
-    res = conn.getresponse()
-    data = json.loads(res.read())
-    validate_typ('return', data, self.retn_typ)
-    return data
+  def path(self):
+    if self.srvc is None or len(self.srvc) == 0:
+      return '/'+self.name
+    return '/'+self.srvc+'/'+self.name
+
+  def call_post(self, args):
+    (host, port) = self.addr
+    conn = HTTPConnection(host, port)
+    conn.request('POST', self.path(), body=json.dumps(args))
+    resp = conn.getresponse()
+    data = json.loads(resp.read())
+    if 'error' in data:
+      raise Exception(data['error'])
+    return data['return']
+
+
+  def call(self, args):
+    validate_args(args, self.args_typ, self.args_req)
+    retn = self.call_post(args)
+    validate_typ('return', retn, self.retn_typ)
+    return retn
+
+
+a = ClientStub('int test(int a, int b)')
+r = a.call({'a': 1, 'b': 2})
+print(r)

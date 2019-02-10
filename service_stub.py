@@ -24,7 +24,6 @@ def validate_args(args, typ, req):
   for k in req:
     if k not in args:
       raise ValueError('%s is required!' % k)
-  return
 
 
 class RequestHandler(BaseHTTPRequestHandler):
@@ -106,9 +105,17 @@ class ServiceStub:
       data = json.loads(resp.read())
       raise NameError(data.get('error'))
 
-  def start(self, addr=('', 1995), midw=None):
+  def start(self, addr=('', 1992), midw=None):
     if midw is not None:
       self.start_add(addr, midw)
     httpd = HTTPServer(addr, RequestHandler)
     httpd.stub = self
     httpd.serve_forever()
+
+
+def test(a, b):
+  return a+b
+
+a = ServiceStub()
+a.add('int test(int a, int b)', test)
+a.start()
