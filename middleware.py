@@ -6,6 +6,13 @@ import json
 import re
 
 
+def parse_addr(addr):
+  i = addr.find(':')
+  host = '' if i<0 else addr[0:i]
+  port = int(addr if i<0 else addr[i+1:])
+  return (host, port)
+
+
 class RequestHandler(BaseHTTPRequestHandler):
   def body(self):
     size = int(self.headers.get('Content-Length'))
@@ -56,14 +63,16 @@ class ServiceHandler:
     if path.startswith('/add/'):
       msg = self.add(path[5:], addr)
     elif path.startswith('/remove/'):
-      msg = self.remove(path[8:], addr)
-    return http.send_json(200 if msg is None else 400, msg)
+      mesg = self.remove(path[8:], addr)
+      code = 200 if mesg is None else 400
+    return http.send_json(code, {'error': mesg})
   
   def handle_forward(self, http):
     name = re.sub(r'\/.*', '', http.path[1:])
     path = http.path[len(name)+1:]
     if self.addrs.get(name) is None:
-      return http.send_json(400, 'Unknown request %s!' % http.path)
+      mesg = 'Unknown request %s!' % http.path
+      return http.send_json(400, {'error': mesg})
     (host, port) = self.addrs[name]
     conn = HTTPConnection(host, port)
     conn.request('POST', path, http.body(), http.headers)
@@ -77,12 +86,11 @@ class ServiceHandler:
 
 
 p = optparse.OptionParser()
-p.set_defaults(host='', port=1992)
-p.add_option('--host', dest='host', help='set middleware host address')
-p.add_option('--port', dest='port', help='set middleware port number', type='int')
+p.set_defaults(addr='1992')
+p.add_option('--address', dest='addr', help='set middleware address')
 (o, args) = p.parse_args()
 
-addr = (o.host, o.port)
-middleware = ServiceHandler()
-print('Starting middleware on',addr)
-middleware.start(addr)
+addr = parse_addr(o.addr)
+midw = ServiceHandler()
+print('Starting middleware on', addr)
+midw.start(addr)

@@ -4,12 +4,6 @@ from http.client import HTTPConnection
 import json
 import re
 
-
-def parse_addr(addr):
-  i = addr.find(':')
-  host = '' if i<0 else addr[0:i]
-  port = int(addr if i<0 else addr[i+1:])
-  return (host, port)
   
 def parse_args(parts):
   (typ, req) = ({}, set())
@@ -94,8 +88,8 @@ class ServiceStub:
     name = http.path[1:]
     proc = self.procs.get(name)
     if proc is None:
-      msg = 'Unknown procedure %s!' % name
-      return http.send_json(400, {'error': msg})
+      mesg = 'Unknown procedure %s!' % name
+      return http.send_json(400, {'error': mesg})
     try:
       args = json.loads(http.body())
       retn = proc.call(args)
@@ -103,25 +97,18 @@ class ServiceStub:
     except Exception as e:
       http.send_json(400, {'error': repr(e)})
 
-  def start_add(self, srvc, midw):
+  def start_add(self, addr, midw):
     (host, port) = midw
-    conn = HTTPConnection(host, port, source_address=srvc)
+    conn = HTTPConnection(host, port, source_address=addr)
     conn.request('POST', '/service/add/'+self.name)
     resp = conn.getresponse()
     if resp.code != 200:
       data = json.loads(resp.read())
       raise NameError(data.get('error'))
 
-  def start(self, srvc=('', 1995), midw=None):
+  def start(self, addr=('', 1995), midw=None):
     if midw is not None:
-      self.start_add(srvc, midw)
-    httpd = HTTPServer(srvc, RequestHandler)
+      self.start_add(addr, midw)
+    httpd = HTTPServer(addr, RequestHandler)
     httpd.stub = self
     httpd.serve_forever()
-
-def test(begin, end):
-  return begin+end
-
-a = ServiceStub()
-a.add('int json(int begin, int end)', test)
-a.start(('', 1992))
