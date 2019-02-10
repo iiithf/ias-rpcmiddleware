@@ -1,1 +1,3 @@
-@python service_stub.py
+@python middleware.py &
+@python memkart_service.py &
+@python memkart_client.py
