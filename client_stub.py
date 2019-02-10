@@ -26,17 +26,17 @@ def validate_args(args, typ, req):
 
 
 class ClientStub:
-  def __init__(self, sign, addr=('127.0.0.1', 1992), srvc=''):
+  def __init__(self, sign, addr=('127.0.0.1', 1992), serv=''):
     self.sign = re.sub(r'\s+', ' ', sign).strip()
     parts = re.sub(r'[^\w\[\]]+', ' ', self.sign).strip().split(' ')
     (self.retn_typ, self.name) = parts[0:2]
     (self.args_typ, self.args_req) = parse_args(parts)
-    (self.addr, self.srvc) = (addr, srvc)
+    (self.addr, self.serv) = (addr, serv)
 
   def path(self):
-    if self.srvc is None or len(self.srvc) == 0:
+    if self.serv is None or len(self.serv) == 0:
       return '/'+self.name
-    return '/'+self.srvc+'/'+self.name
+    return '/'+self.serv+'/'+self.name
 
   def call_post(self, args):
     (host, port) = self.addr
