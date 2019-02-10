@@ -56,6 +56,6 @@ class ClientStub:
     return retn
 
 
-a = ClientStub('int test(int a, int b)')
-r = a.call({'a': 1, 'b': 2})
-print(r)
+# a = ClientStub('int test(int a, int b)')
+# r = a.call({'a': 1, 'b': 2})
+# print(r)

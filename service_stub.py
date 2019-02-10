@@ -113,9 +113,8 @@ class ServiceStub:
     httpd.serve_forever()
 
 
-def test(a, b):
-  return a+b
-
-a = ServiceStub()
-a.add('int test(int a, int b)', test)
-a.start()
+# def test(a, b):
+#   return a+b
+# a = ServiceStub()
+# a.add('int test(int a, int b)', test)
+# a.start()
