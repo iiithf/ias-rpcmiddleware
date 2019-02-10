@@ -3,7 +3,7 @@ from service_stub import ServiceStub, ServiceProcedure
 
 
 def test1(a, b):
-  return
+  return a+b
 
 def test2(a, b):
   return

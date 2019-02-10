@@ -14,16 +14,19 @@ def parse_args(parts):
       req.add(arg)
   return (typ, req)
 
+def type_str(val):
+  return re.sub(r'<class \'(.*?)\'>', r'\1', str(type(val)))
+
 def validate_typ(nam, val, typ):
-  if str(type(val)).find(typ) < 0:
-    raise TypeError('%s=%s (%s), but expected %s!' % (nam, str(val), type(val), typ))
+  if type_str(val) != typ:
+    raise TypeError('Argument %s=%s (%s), but expected %s!' % (nam, str(val), type_str(val), typ))
 
 def validate_args(args, typ, req):
   for k, v in args.items():
     validate_typ(k, v, typ.get(k))
   for k in req:
     if k not in args:
-      raise ValueError('%s is required!' % k)
+      raise ValueError('Argument %s is required!' % k)
 
 
 class RequestHandler(BaseHTTPRequestHandler):
@@ -97,7 +100,7 @@ class ServiceStub:
       retn = proc.call(args)
       http.send_json(200, {'return': retn})
     except Exception as e:
-      http.send_json(400, {'error': repr(e)})
+      http.send_json(400, {'error': str(e)})
 
   def start_add(self, addr, midw):
     (host, port) = midw
