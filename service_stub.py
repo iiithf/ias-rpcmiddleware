@@ -44,8 +44,11 @@ class RequestHandler(BaseHTTPRequestHandler):
     self.send(code, bytes(json.dumps(body), 'utf8'), heads)
 
   def do_GET(self):
+    data = {}
     stub = self.server.stub
-    self.send_json(200, stub.procs)
+    for k, v in stub.procs.items():
+      data[k] = v.sign
+    self.send_json(200, data)
 
   def do_POST(self):
     stub = self.server.stub
